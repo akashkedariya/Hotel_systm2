@@ -72,7 +72,7 @@ class add_room (APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)    
     
 
-class add_room (APIView):
+class booking_room (APIView):
 
     def post(self, request, format=None):
         serializer = BookingSerializers(data=request.data)
