@@ -8,7 +8,18 @@ urlpatterns = [
     path('room-type/',views.room_type.as_view()),
     path('add-room-details/',views.add_room.as_view()),
     path('booking-room/',views.booking_room.as_view()),
-    path('bill-calculate/',views.customer_bill)
+    path('bill-calculate/',views.customer_bill),
+    path('add-food/',views.food_menu.as_view()),
+    # path('food-order/',views.food_order.as_view),
+    path('food-order/',views.food_ordering),
+    path('customer-bill/',views.customer_bill_receipt.as_view()),
+
+
+    path('customer-detailes/',views.booking_get_data.as_view()),
+    path('customer-detailes/<int:pk>/',views.booking_get_data.as_view()),
+
+    # path('register-user/',views.user_register),
+
 
 
 ]
