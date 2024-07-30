@@ -13,10 +13,9 @@ urlpatterns = [
     # path('food-order/',views.food_order.as_view),
     path('food-order/',views.food_ordering),
     path('customer-bill/',views.customer_bill_receipt.as_view()),
-
-
     path('customer-detailes/',views.booking_get_data.as_view()),
     path('customer-detailes/<int:pk>/',views.booking_get_data.as_view()),
+    path('bill-pdf/',views.bill_pdf),
 
     # path('register-user/',views.user_register),
 
