@@ -15,7 +15,7 @@ class EmployeeSerializers(serializers.ModelSerializer) :
 
 class Room_typeSerializers(serializers.ModelSerializer) :
     class Meta :
-        model =RoomType
+        model = RoomType
         fields = ['name', 'description']
 
 
@@ -34,7 +34,7 @@ class BookingSerializers(serializers.ModelSerializer) :
 class MenuSerializers(serializers.ModelSerializer) :
     class Meta :
         model = Menu
-        fields = ['item_id', 'item_name', 'amount']              
+        fields = ['item_id', 'item_name', 'amount','gst','description']              
 
 class OrderSerializers(serializers.ModelSerializer) :
     class Meta :

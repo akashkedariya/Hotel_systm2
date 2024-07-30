@@ -61,7 +61,7 @@ class Booking(models.Model):
     cus_id = models.FileField(upload_to = 'uploads/',null=True)
     room = models.ForeignKey(Room, on_delete = models.CASCADE)
     check_in = models.DateTimeField(default = datetime.now())
-    check_out = models.DateTimeField(default = datetime.now())
+    check_out = models.DateTimeField(null = True)
     total_price = models.DecimalField(max_digits=10, decimal_places = 2,default=0)
     total_days = models.IntegerField(null = True)
 
@@ -75,6 +75,7 @@ class Menu(models.Model) :
     item_name = models.CharField(max_length=70)
     description = models.TextField(null=True)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
+    gst = models.IntegerField(default=5,verbose_name = "GST %")
 
 
 class Order(models.Model) :

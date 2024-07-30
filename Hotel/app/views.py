@@ -98,13 +98,17 @@ class booking_room (APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)     
     
-
+# import pytz
 @api_view(['POST','GET'])
 def customer_bill(request) :
 
     if request.method == 'POST' :
         custmer_id = request.POST['custmer_id']
-        chack_out_time = timezone.now()
+        print('======datetime.now().now()=======',datetime.now())
+        chack_out_time = datetime.now()
+        chack_out_time2 = chack_out_time
+        print('========chack_out_time=============',chack_out_time)
+        chack_out_time = chack_out_time.replace(tzinfo=timezone.utc)
         print('=======chackoutchackout======',chack_out_time)
         if Booking.objects.filter(id = custmer_id).exists() :
 
@@ -131,40 +135,67 @@ def customer_bill(request) :
 
             room_price = booked_cus.room.price
 
-            total_room_price = room_price * days
+            all_price = room_price * days
 
             food_data = Order.objects.filter(customer = custmer_id)
-            print('=========food data=====',food_data)
-
-            food_amount = 0
+            # print('=========food data=====',food_data)
             food_bill_list = []
-            for i in food_data :
-                print('===AA==',i.no_of_item,'*',i.food_name.amount,'=',i.food_name.item_name)
-                amount = i.no_of_item * i.food_name.amount
+            if food_data:
+                # print('====datatatata====')
+
+            # else:
+            #     print('====empty====')    
+
+                food_amount = 0
                 
-                food_bill = {
-                    "food name" : i.food_name.item_name,
-                    "food quantity" : i.no_of_item,
-                    "food amount" : i.food_name.amount,
-                    "total item amount" : (i.no_of_item) * (i.food_name.amount)
-                }
+                for i in food_data :
+                    # print('===AA==',i.no_of_item,'*',i.food_name.amount,'=',i.food_name.item_name)
+                    amount = i.no_of_item * i.food_name.amount
+                    print('======amount=========',amount)
+                    gst_count = float(i.food_name.gst/100) * float(amount)
+                    print('=====gst_count====',gst_count)
 
-                food_bill_list.append(food_bill)
+                    total_item_amount = float(i.no_of_item) * (float(i.food_name.amount)) + float(gst_count)
+                    print('=========total=====',total_item_amount)
+                    food_bill = {
+                        "food name" : i.food_name.item_name,
+                        "gst(%)" : i.food_name.gst,
+                        "food amount" : i.food_name.amount,
+                        "food quantity" : i.no_of_item,
+                        "total item amount" : total_item_amount,
+                    }
 
-                food_amount = food_amount + amount
+                    food_bill_list.append(food_bill)
 
-                all_price = total_room_price + food_amount
+                    food_amount = food_amount + total_item_amount
+                # print('==========amount======',food_amount)
 
-            print('=====all_price===',all_price)
-            print('=========food amount=======',food_amount)
+                all_price = float(all_price) + float(food_amount)
+                print('==========all price======',all_price)
 
-            # booked_cus.check_out = chack_out_time
-            # booked_cus.total_price = total_room_price + food_amount
-            # booked_cus.total_days = days
+                    # all_price = float(total_room_price) + float(total_item_amount)
 
-            # booked_cus.save()
+                # print('=====all_price===',all_price)
+                print('=======last== chack_out_time=======',chack_out_time)
 
-            # print('=======booked_cus.room.room_type.name======',booked_cus.room.room_type.name)
+                booked_cus.check_out = chack_out_time2
+                booked_cus.total_price = all_price
+                booked_cus.total_days = days
+
+                booked_cus.save()
+
+            else:
+                print('====empty====')
+
+                booked_cus.check_out = chack_out_time2
+                booked_cus.total_price = all_price
+                booked_cus.total_days = days
+
+                booked_cus.save()
+
+            room_data = Room.objects.get(room_number = booked_cus.room.room_number)
+            room_data.is_available = False
+            room_data.save()
 
             context = {
                 'customer' :'Customer check_out',
@@ -297,8 +328,10 @@ def bill_pdf(request) :
 
     if request.method == 'POST' :
 
-        filename = "uploads/pdf/example.pdf"
-        print('=======working==========')
+        cus_id = request.POST['cus_id']
+        user = Booking.objects.get(id = cus_id)
+     
+        filename = f"uploads/pdf/{user.customer}.pdf"
         document = SimpleDocTemplate(filename, pagesize=letter)
         elements = []
         styles = getSampleStyleSheet()
@@ -307,13 +340,9 @@ def bill_pdf(request) :
         title = Paragraph(" Upsquare tech. Hotel", styles['Title'])
         elements.append(title)
 
-        user = Booking.objects.get(id = 2)
-        print('===========user=====',user.total_days)
         b_time = datetime.now()
       
         formatted_time = b_time.strftime('%Y-%m-%d %H:%M:%S')
-
-        print('=======formatted_time=====',formatted_time)
 
         date_paragraph = Paragraph('Date & Time : ' + str(formatted_time), styles['Normal'])
         elements.append(date_paragraph)
@@ -335,13 +364,12 @@ def bill_pdf(request) :
         elements.append(paragraph)
 
         cus_order = Order.objects.filter(customer = user.id )
-        print('=====cus order=========',cus_order)
-
+    
         # Add a table - 1
         total_price = 0
         data = [['Order Id', 'Item Name', 'Price','Quantity','Total']]
         for i in cus_order :
-            print('========iii=====',i.order_id)
+           
             total_items_price = i.no_of_item * i.food_name.amount
             total_price += total_items_price
             # total_items_price = i.no_of_item * i.food_name.amount
@@ -362,14 +390,14 @@ def bill_pdf(request) :
 
         # elements.append(PageBreak())
         # Add Table - 2 ==Room detailes================================================================
-        print('==total days===',user.total_days)
+        
         room_data = [[ 'Room No', 'room_type', 'price','No of Days'],
                      [user.room.room_number, user.room.room_type, user.room.price,user.total_days]]
 
-        total_room_price = user.total_days * user.room.price
+        total_room_price = float(user.total_days) * float(user.room.price)
         room_data.append(['','','Total room price',total_room_price]) 
 
-        all_over_total = total_room_price + total_price
+        all_over_total = float(total_room_price) + float(total_price)
         room_data.append(["","",'Total',all_over_total])    
 
         table2 = Table(room_data)
@@ -387,9 +415,13 @@ def bill_pdf(request) :
         elements.append(PageBreak())
 
         document.build(elements)
-        print('====PDF making=====')
 
-        return JsonResponse({'PDF' : 'PDF succesfully created....'})
+        context = {
+            'user' : user.customer,
+            "message" : f'{user.customer} successfully bill created'
+        }
+
+        return JsonResponse(context)
 
 
 
