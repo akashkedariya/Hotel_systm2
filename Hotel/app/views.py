@@ -288,8 +288,6 @@ def food_ordering(request) :
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST) 
 
 
-
-
 class customer_bill_receipt(APIView):
 
     def get(self, request, format=None):
@@ -319,109 +317,204 @@ from django.utils import timezone
 from datetime import datetime
 
 from datetime import datetime
-import pendulum
+# import pendulum
 from reportlab.lib.colors import HexColor
 
 
-@api_view(['POST'])
-def bill_pdf(request) :
+# @api_view(['POST'])
+# def bill_pdf(request) :
 
-    if request.method == 'POST' :
+#     if request.method == 'POST' :
 
-        cus_id = request.POST['cus_id']
-        user = Booking.objects.get(id = cus_id)
+#         cus_id = request.POST['cus_id']
+#         user = Booking.objects.get(id = cus_id)
      
-        filename = f"uploads/pdf/{user.customer}.pdf"
-        document = SimpleDocTemplate(filename, pagesize=letter)
+#         filename = f"uploads/pdf/{user.customer}.pdf"
+#         document = SimpleDocTemplate(filename, pagesize=letter)
+#         elements = []
+#         styles = getSampleStyleSheet()
+
+#         # Add a title
+#         title = Paragraph(" Upsquare tech. Hotel", styles['Title'])
+#         elements.append(title)
+
+#         b_time = datetime.now()
+      
+#         formatted_time = b_time.strftime('%Y-%m-%d %H:%M:%S')
+
+#         date_paragraph = Paragraph('Date & Time : ' + str(formatted_time), styles['Normal'])
+#         elements.append(date_paragraph)
+
+#         custom_fields = [
+#             ('Customer Name', user.customer),
+#             ('Room Number', user.room.room_number),
+#             ('Check-in Date', user.check_in),
+#             ('Check-out Date', user.check_out),
+#             # ('Total Amount', '$200.00')
+#         ]
+
+#         for field_name, field_value in custom_fields:
+#             field_paragraph = Paragraph(f'{field_name}: {field_value}', styles['Normal'])
+#             elements.append(field_paragraph)
+
+#         text = "This Blank "
+#         paragraph = Paragraph(text, styles['BodyText'])
+#         elements.append(paragraph)
+
+#         cus_order = Order.objects.filter(customer = user.id )
+    
+#         # Add a table - 1
+#         total_price = 0
+#         data = [['Order Id', 'Item Name', 'Price','Quantity','Total']]
+#         for i in cus_order :
+           
+#             total_items_price = i.no_of_item * i.food_name.amount
+#             total_price += total_items_price
+#             # total_items_price = i.no_of_item * i.food_name.amount
+#             data.append([i.order_id, i.food_name.item_name, i.food_name.amount,i.no_of_item,total_items_price]) 
+#             # data.append([,,,,])
+        
+#         data.append(['', '', '', 'Total Price', total_price])
+
+#         table = Table(data)
+#         table.setStyle(TableStyle([('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+#                                 ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+#                                 ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+#                                 ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+#                                 ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+#                                 ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+#                                 ('GRID', (0, 0), (-1, -1), 1, colors.black)]))
+#         elements.append(table)
+
+#         # elements.append(PageBreak())
+#         # Add Table - 2 ==Room detailes================================================================
+        
+#         room_data = [[ 'Room No', 'room_type', 'price','No of Days'],
+#                      [user.room.room_number, user.room.room_type, user.room.price,user.total_days]]
+
+#         total_room_price = float(user.total_days) * float(user.room.price)
+#         room_data.append(['','','Total room price',total_room_price]) 
+
+#         all_over_total = float(total_room_price) + float(total_price)
+#         room_data.append(["","",'Total',all_over_total])    
+
+#         table2 = Table(room_data)
+#         table2.setStyle(TableStyle([('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+#                                 ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+#                                 ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+#                                 ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+#                                 ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+#                                 ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+#                                 ('BACKGROUND', (-2, -1), (-1, -1), '#ADD8E6'),
+#                                 ('GRID', (0, 0), (-1, -1), 1, colors.black)])),
+#         elements.append(table2)
+
+#         # Add a page break
+#         elements.append(PageBreak())
+
+#         document.build(elements)
+
+#         context = {
+#             'user' : user.customer,
+#             "message" : f'{user.customer} successfully bill created'
+#         }
+
+#         return JsonResponse(context)
+
+
+from django.http import HttpResponse
+from io import BytesIO
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Table, TableStyle
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet
+from datetime import datetime
+from rest_framework.decorators import api_view
+
+@api_view(['POST'])
+def bill_pdf(request):
+    if request.method == 'POST':
+        cus_id = request.POST['cus_id']
+        user = Booking.objects.get(id=cus_id)
+
+        buffer = BytesIO()  # Create an in-memory file-like object
+        document = SimpleDocTemplate(buffer, pagesize=letter)
         elements = []
         styles = getSampleStyleSheet()
 
         # Add a title
-        title = Paragraph(" Upsquare tech. Hotel", styles['Title'])
+        title = Paragraph("Upsquare tech. Hotel", styles['Title'])
         elements.append(title)
 
         b_time = datetime.now()
-      
         formatted_time = b_time.strftime('%Y-%m-%d %H:%M:%S')
-
-        date_paragraph = Paragraph('Date & Time : ' + str(formatted_time), styles['Normal'])
+        date_paragraph = Paragraph('Date & Time: ' + str(formatted_time), styles['Normal'])
         elements.append(date_paragraph)
 
+        # Customer fields
         custom_fields = [
             ('Customer Name', user.customer),
             ('Room Number', user.room.room_number),
             ('Check-in Date', user.check_in),
             ('Check-out Date', user.check_out),
-            # ('Total Amount', '$200.00')
         ]
 
         for field_name, field_value in custom_fields:
             field_paragraph = Paragraph(f'{field_name}: {field_value}', styles['Normal'])
             elements.append(field_paragraph)
 
-        text = "This Blank "
-        paragraph = Paragraph(text, styles['BodyText'])
-        elements.append(paragraph)
-
-        cus_order = Order.objects.filter(customer = user.id )
-    
-        # Add a table - 1
+        # Orders table
+        cus_order = Order.objects.filter(customer=user.id)
         total_price = 0
-        data = [['Order Id', 'Item Name', 'Price','Quantity','Total']]
-        for i in cus_order :
-           
-            total_items_price = i.no_of_item * i.food_name.amount
+        data = [['Order Id', 'Item Name', 'Price', 'Quantity', 'Total']]
+        for order in cus_order:
+            total_items_price = order.no_of_item * order.food_name.amount
             total_price += total_items_price
-            # total_items_price = i.no_of_item * i.food_name.amount
-            data.append([i.order_id, i.food_name.item_name, i.food_name.amount,i.no_of_item,total_items_price]) 
-            # data.append([,,,,])
-        
-        data.append(['', '', '', 'Total Price', total_price])
+            data.append([order.order_id, order.food_name.item_name, order.food_name.amount, order.no_of_item, total_items_price])
 
+        data.append(['', '', '', 'Total Price', total_price])
         table = Table(data)
-        table.setStyle(TableStyle([('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-                                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-                                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                                ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-                                ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-                                ('GRID', (0, 0), (-1, -1), 1, colors.black)]))
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ]))
         elements.append(table)
 
-        # elements.append(PageBreak())
-        # Add Table - 2 ==Room detailes================================================================
-        
-        room_data = [[ 'Room No', 'room_type', 'price','No of Days'],
-                     [user.room.room_number, user.room.room_type, user.room.price,user.total_days]]
+        # Room details table
+        room_data = [['Room No', 'Room Type', 'Price', 'No of Days'],
+                     [user.room.room_number, user.room.room_type, user.room.price, user.total_days]]
 
         total_room_price = float(user.total_days) * float(user.room.price)
-        room_data.append(['','','Total room price',total_room_price]) 
+        room_data.append(['', '', 'Total room price', total_room_price])
 
         all_over_total = float(total_room_price) + float(total_price)
-        room_data.append(["","",'Total',all_over_total])    
+        room_data.append(["", '', 'Total', all_over_total])
 
         table2 = Table(room_data)
-        table2.setStyle(TableStyle([('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-                                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-                                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                                ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-                                ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-                                ('BACKGROUND', (-2, -1), (-1, -1), '#ADD8E6'),
-                                ('GRID', (0, 0), (-1, -1), 1, colors.black)])),
+        table2.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ]))
         elements.append(table2)
 
-        # Add a page break
-        elements.append(PageBreak())
-
+        # Generate PDF
         document.build(elements)
+        buffer.seek(0)
 
-        context = {
-            'user' : user.customer,
-            "message" : f'{user.customer} successfully bill created'
-        }
-
-        return JsonResponse(context)
+        # Return PDF as HTTP response
+        response = HttpResponse(buffer, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="{user.customer}_bill.pdf"'
+        return response
 
 
 
